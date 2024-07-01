@@ -18,8 +18,5 @@ func main() {
 		ServeWs(wsServer, w, r)
 	})
 
-	fs := http.FileServer(http.Dir("./public"))
-	http.Handle("/", fs)
-
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
