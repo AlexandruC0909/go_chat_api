@@ -44,6 +44,7 @@ type Client struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
 	rooms    map[*Room]bool
+	isTyping bool
 }
 
 func newClient(conn *websocket.Conn, wsServer *WsServer, name string) *Client {
@@ -187,8 +188,10 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 
 	case JoinRoomPrivateAction:
 		client.handleJoinRoomPrivateMessage(message)
-	}
 
+	case TypingAction:
+		client.SetTyping(message.Message == "true")
+	}
 }
 
 func (client *Client) handleJoinRoomMessage(message Message) {
@@ -268,4 +271,16 @@ func (client *Client) notifyRoomJoined(room *Room, sender *Client) {
 
 func (client *Client) GetName() string {
 	return client.Name
+}
+
+func (client *Client) SetTyping(isTyping bool) {
+	client.isTyping = isTyping
+
+	message := Message{
+		Action: TypingAction,
+		Sender: client,
+	}
+	for room := range client.rooms {
+		room.broadcast <- &message
+	}
 }
