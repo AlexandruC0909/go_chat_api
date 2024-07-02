@@ -13,6 +13,7 @@ const UserLeftAction = "user-left"
 const JoinRoomPrivateAction = "join-room-private"
 const RoomJoinedAction = "room-joined"
 const TypingAction = "typing-action"
+const UserLoggedInAction = "user-logged-in"
 
 type Message struct {
 	Action    string  `json:"action"`

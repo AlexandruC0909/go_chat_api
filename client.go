@@ -13,16 +13,9 @@ import (
 )
 
 const (
-	// Max wait time when writing message to peer
-	writeWait = 10 * time.Second
-
-	// Max time till next pong from peer
-	pongWait = 60 * time.Second
-
-	// Send ping interval, must be less then pong wait time
-	pingPeriod = (pongWait * 9) / 10
-
-	// Maximum message size allowed from peer.
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
 	maxMessageSize = 10000
 )
 
@@ -69,7 +62,6 @@ func (client *Client) readPump() {
 	client.conn.SetReadDeadline(time.Now().Add(pongWait))
 	client.conn.SetPongHandler(func(string) error { client.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
-	// Start endless read loop, waiting for messages from client
 	for {
 		_, jsonMessage, err := client.conn.ReadMessage()
 		if err != nil {
@@ -157,14 +149,20 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 
 	client := newClient(conn, wsServer, name[0])
 
+	go client.writePump()
+	go client.readPump()
+
 	roomListMsg := &RoomListMessage{
 		Action:   "room-list",
 		RoomList: wsServer.getAllRooms(),
 	}
 	client.send <- roomListMsg.encode()
 
-	go client.writePump()
-	go client.readPump()
+	message := &Message{
+		Action: UserLoggedInAction,
+		Sender: client,
+	}
+	client.send <- message.encode()
 
 	wsServer.register <- client
 }
@@ -249,7 +247,6 @@ func (client *Client) joinRoom(roomName string, sender *Client) {
 		}
 	}
 
-	// Don't allow to join private rooms through public room message
 	if sender == nil && room.Private {
 		return
 	}

@@ -11,8 +11,9 @@ import (
 const welcomeMessage = "%s joined the room"
 
 type Room struct {
-	ID         uuid.UUID `json:"id"`
-	Name       string    `json:"name"`
+	ID         uuid.UUID   `json:"id"`
+	Name       string      `json:"name"`
+	ClientIDs  []uuid.UUID `json:"client_ids"`
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
@@ -31,6 +32,7 @@ func NewRoom(name string, private bool) *Room {
 		ID:         uuid.New(),
 		Name:       name,
 		clients:    make(map[*Client]bool),
+		ClientIDs:  make([]uuid.UUID, 0),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan *Message),
@@ -61,11 +63,19 @@ func (room *Room) registerClientInRoom(client *Client) {
 		room.notifyClientJoined(client)
 	}
 	room.clients[client] = true
+	room.ClientIDs = append(room.ClientIDs, client.ID)
 }
 
 func (room *Room) unregisterClientInRoom(client *Client) {
 	if _, ok := room.clients[client]; ok {
 		delete(room.clients, client)
+
+		for i, id := range room.ClientIDs {
+			if id == client.ID {
+				room.ClientIDs = append(room.ClientIDs[:i], room.ClientIDs[i+1:]...)
+				break
+			}
+		}
 	}
 }
 
