@@ -1,11 +1,14 @@
 package main
 
+import "sync"
+
 type WsServer struct {
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan []byte
 	rooms      map[*Room]bool
+	mutex      sync.Mutex
 }
 
 // NewWebsocketServer creates a new WsServer type
@@ -127,4 +130,15 @@ func (server *WsServer) findClientByID(ID string) *Client {
 	}
 
 	return foundClient
+}
+
+func (server *WsServer) getAllRooms() []*Room {
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
+
+	rooms := make([]*Room, 0, len(server.rooms))
+	for room := range server.rooms {
+		rooms = append(rooms, room)
+	}
+	return rooms
 }

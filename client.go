@@ -134,7 +134,6 @@ func (client *Client) disconnect() {
 	client.conn.Close()
 }
 
-// ServeWs handles websocket requests from clients requests.
 func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 
 	name, ok := r.URL.Query()["name"]
@@ -157,6 +156,12 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := newClient(conn, wsServer, name[0])
+
+	roomListMsg := &RoomListMessage{
+		Action:   "room-list",
+		RoomList: wsServer.getAllRooms(),
+	}
+	client.send <- roomListMsg.encode()
 
 	go client.writePump()
 	go client.readPump()
@@ -229,14 +234,19 @@ func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 
 	client.joinRoom(roomName, target)
 	target.joinRoom(roomName, client)
-
 }
 
 func (client *Client) joinRoom(roomName string, sender *Client) {
-
 	room := client.wsServer.findRoomByName(roomName)
 	if room == nil {
 		room = client.wsServer.createRoom(roomName, sender != nil)
+		for client2 := range client.wsServer.clients {
+			roomListMsg := &RoomListMessage{
+				Action:   "room-list",
+				RoomList: client.wsServer.getAllRooms(),
+			}
+			client2.send <- roomListMsg.encode()
+		}
 	}
 
 	// Don't allow to join private rooms through public room message
@@ -283,5 +293,4 @@ func (client *Client) SetTyping(message Message) {
 	for room := range client.rooms {
 		room.broadcast <- &message
 	}
-
 }

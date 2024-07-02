@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 )
@@ -16,6 +18,11 @@ type Room struct {
 	unregister chan *Client
 	broadcast  chan *Message
 	Private    bool `json:"private"`
+}
+
+type RoomListMessage struct {
+	Action   string  `json:"action"`
+	RoomList []*Room `json:"rooms"`
 }
 
 // NewRoom creates a new Room
@@ -84,4 +91,12 @@ func (room *Room) GetId() string {
 
 func (room *Room) GetName() string {
 	return room.Name
+}
+
+func (msg *RoomListMessage) encode() []byte {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error on encoding RoomListMessage: %s", err)
+	}
+	return data
 }
