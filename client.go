@@ -190,7 +190,7 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 		client.handleJoinRoomPrivateMessage(message)
 
 	case TypingAction:
-		client.SetTyping(message.Message == "true")
+		client.SetTyping(message)
 	}
 }
 
@@ -273,14 +273,12 @@ func (client *Client) GetName() string {
 	return client.Name
 }
 
-func (client *Client) SetTyping(isTyping bool) {
-	client.isTyping = isTyping
+func (client *Client) SetTyping(message Message) {
+	client.isTyping = message.Message == "true"
 
-	message := Message{
-		Action: TypingAction,
-		Sender: client,
-	}
+	message.Sender = client
 	for room := range client.rooms {
 		room.broadcast <- &message
 	}
+
 }
