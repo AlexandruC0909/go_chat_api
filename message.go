@@ -15,10 +15,11 @@ const RoomJoinedAction = "room-joined"
 const TypingAction = "typing-action"
 
 type Message struct {
-	Action  string  `json:"action"`
-	Message string  `json:"message"`
-	Target  *Room   `json:"target"`
-	Sender  *Client `json:"sender"`
+	Action    string  `json:"action"`
+	Message   string  `json:"message"`
+	Target    *Room   `json:"target"`
+	Sender    *Client `json:"sender"`
+	Timestamp string  `json:"timestamp"`
 }
 
 func (message *Message) encode() []byte {

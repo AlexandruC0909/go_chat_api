@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -172,7 +173,9 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 	}
 
 	message.Sender = client
-
+	currentTime := time.Now()
+	currentHour, currentMinute, _ := currentTime.Clock()
+	message.Timestamp = fmt.Sprintf("%d:%02d", currentHour, currentMinute)
 	switch message.Action {
 	case SendMessageAction:
 		roomID := message.Target.GetId()
