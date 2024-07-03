@@ -183,6 +183,7 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 	case SendMessageAction:
 		roomID := message.Target.GetId()
 		if room := client.wsServer.findRoomByID(roomID); room != nil {
+			room.Messages = append(room.Messages, message)
 			room.broadcast <- &message
 		}
 

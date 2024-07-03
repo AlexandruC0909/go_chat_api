@@ -14,6 +14,7 @@ type Room struct {
 	ID         uuid.UUID   `json:"id"`
 	Name       string      `json:"name"`
 	ClientIDs  []uuid.UUID `json:"client_ids"`
+	Messages   []Message   `json:"messages"`
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
@@ -32,6 +33,7 @@ func NewRoom(name string, private bool) *Room {
 		ID:         uuid.New(),
 		Name:       name,
 		clients:    make(map[*Client]bool),
+		Messages:   make([]Message, 0),
 		ClientIDs:  make([]uuid.UUID, 0),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
