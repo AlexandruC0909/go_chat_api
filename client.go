@@ -29,9 +29,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 4096,
 }
 
-// Client represents the websocket client at the server
 type Client struct {
-	// The actual websocket connection.
 	conn     *websocket.Conn
 	wsServer *WsServer
 	send     chan []byte
