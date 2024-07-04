@@ -11,15 +11,16 @@ import (
 const welcomeMessage = "%s joined the room"
 
 type Room struct {
-	ID         uuid.UUID   `json:"id"`
-	Name       string      `json:"name"`
-	ClientIDs  []uuid.UUID `json:"client_ids"`
-	Messages   []Message   `json:"messages"`
-	clients    map[*Client]bool
-	register   chan *Client
-	unregister chan *Client
-	broadcast  chan *Message
-	Private    bool `json:"private"`
+	ID          uuid.UUID   `json:"id"`
+	Name        string      `json:"name"`
+	ClientIDs   []uuid.UUID `json:"client_ids"`
+	ClientNames []string    `json:"client_names"`
+	Messages    []Message   `json:"messages"`
+	clients     map[*Client]bool
+	register    chan *Client
+	unregister  chan *Client
+	broadcast   chan *Message
+	Private     bool `json:"private"`
 }
 
 type RoomListMessage struct {
@@ -27,22 +28,21 @@ type RoomListMessage struct {
 	RoomList []*Room `json:"rooms"`
 }
 
-// NewRoom creates a new Room
 func NewRoom(name string, private bool) *Room {
 	return &Room{
-		ID:         uuid.New(),
-		Name:       name,
-		clients:    make(map[*Client]bool),
-		Messages:   make([]Message, 0),
-		ClientIDs:  make([]uuid.UUID, 0),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		broadcast:  make(chan *Message),
-		Private:    private,
+		ID:          uuid.New(),
+		Name:        name,
+		clients:     make(map[*Client]bool),
+		Messages:    make([]Message, 0),
+		ClientIDs:   make([]uuid.UUID, 0),
+		ClientNames: make([]string, 0),
+		register:    make(chan *Client),
+		unregister:  make(chan *Client),
+		broadcast:   make(chan *Message),
+		Private:     private,
 	}
 }
 
-// RunRoom runs our room, accepting various requests
 func (room *Room) RunRoom() {
 	for {
 		select {
@@ -66,6 +66,7 @@ func (room *Room) registerClientInRoom(client *Client) {
 	}
 	room.clients[client] = true
 	room.ClientIDs = append(room.ClientIDs, client.ID)
+	room.ClientNames = append(room.ClientNames, client.Name)
 }
 
 func (room *Room) unregisterClientInRoom(client *Client) {
@@ -75,6 +76,7 @@ func (room *Room) unregisterClientInRoom(client *Client) {
 		for i, id := range room.ClientIDs {
 			if id == client.ID {
 				room.ClientIDs = append(room.ClientIDs[:i], room.ClientIDs[i+1:]...)
+				room.ClientNames = append(room.ClientNames[:i], room.ClientNames[i+1:]...)
 				break
 			}
 		}

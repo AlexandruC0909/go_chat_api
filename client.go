@@ -85,7 +85,6 @@ func (client *Client) writePump() {
 		case message, ok := <-client.send:
 			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// The WsServer closed the channel.
 				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
@@ -96,7 +95,6 @@ func (client *Client) writePump() {
 			}
 			w.Write(message)
 
-			// Attach queued chat messages to the current websocket message.
 			n := len(client.send)
 			for i := 0; i < n; i++ {
 				w.Write(newline)
@@ -202,7 +200,7 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 func (client *Client) handleJoinRoomMessage(message Message) {
 	roomName := message.Message
 
-	client.joinRoom(roomName, nil)
+	client.joinRoom(roomName, message.Sender)
 }
 
 func (client *Client) handleLeaveRoomMessage(message Message) {
@@ -226,7 +224,6 @@ func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 		return
 	}
 
-	// create unique room name combined to the two IDs
 	roomName := message.Message + client.ID.String()
 
 	client.joinRoom(roomName, target)
@@ -236,7 +233,7 @@ func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 func (client *Client) joinRoom(roomName string, sender *Client) {
 	room := client.wsServer.findRoomByName(roomName)
 	if room == nil {
-		room = client.wsServer.createRoom(roomName, sender != nil)
+		room = client.wsServer.createRoom(roomName, sender != nil, sender)
 		for client2 := range client.wsServer.clients {
 			roomListMsg := &RoomListMessage{
 				Action:   "room-list",
