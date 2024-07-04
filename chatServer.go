@@ -11,6 +11,7 @@ type WsServer struct {
 	mutex      sync.Mutex
 }
 
+// NewWebsocketServer creates a new WsServer type
 func NewWebsocketServer() *WsServer {
 	return &WsServer{
 		clients:    make(map[*Client]bool),
@@ -21,6 +22,7 @@ func NewWebsocketServer() *WsServer {
 	}
 }
 
+// Run our websocket server, accepting various requests
 func (server *WsServer) Run() {
 	for {
 		select {
@@ -110,10 +112,8 @@ func (server *WsServer) findRoomByID(ID string) *Room {
 	return foundRoom
 }
 
-func (server *WsServer) createRoom(name string, private bool, sender *Client) *Room {
+func (server *WsServer) createRoom(name string, private bool) *Room {
 	room := NewRoom(name, private)
-	room.ClientIDs = append(room.ClientIDs, sender.ID)
-	room.ClientNames = append(room.ClientNames, sender.Name)
 	go room.RunRoom()
 	server.rooms[room] = true
 
