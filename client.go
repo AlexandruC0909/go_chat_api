@@ -27,6 +27,9 @@ var (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 type Client struct {
@@ -131,12 +134,6 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	if !ok || len(name[0]) < 1 {
 		log.Println("Url Param 'name' is missing")
 		return
-	}
-
-	var upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
