@@ -1,6 +1,9 @@
 package main
 
-import "sync"
+import (
+	"log"
+	"sync"
+)
 
 type WsServer struct {
 	clients    map[*Client]bool
@@ -26,17 +29,19 @@ func NewWebsocketServer() *WsServer {
 func (server *WsServer) Run() {
 	for {
 		select {
-
 		case client := <-server.register:
 			server.registerClient(client)
+			log.Printf("Client registered: %v", client)
 
 		case client := <-server.unregister:
 			server.unregisterClient(client)
+			log.Printf("Client unregistered: %v", client)
 
 		case message := <-server.broadcast:
 			server.broadcastToClients(message)
-		}
+			log.Printf("Broadcast message: %v", message)
 
+		}
 	}
 }
 
