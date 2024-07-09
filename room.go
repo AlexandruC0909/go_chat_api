@@ -91,6 +91,7 @@ func (room *Room) notifyClientJoined(client *Client) {
 	message := &Message{
 		Action:  SendMessageAction,
 		Target:  room,
+		Sender:  client,
 		Message: fmt.Sprintf(welcomeMessage, client.GetName()),
 	}
 
