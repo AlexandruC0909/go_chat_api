@@ -39,6 +39,7 @@ type Client struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
 	rooms    map[*Room]bool
+	RoomsIds []uuid.UUID `json:"rooms"`
 	isTyping bool
 }
 
@@ -50,6 +51,7 @@ func newClient(conn *websocket.Conn, wsServer *WsServer, name string) *Client {
 		wsServer: wsServer,
 		send:     make(chan []byte, 256),
 		rooms:    make(map[*Room]bool),
+		RoomsIds: make([]uuid.UUID, 0),
 	}
 
 }
@@ -286,4 +288,13 @@ func (client *Client) SetTyping(message Message) {
 	for room := range client.rooms {
 		room.broadcast <- &message
 	}
+}
+
+func contains(slice []uuid.UUID, item uuid.UUID) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }

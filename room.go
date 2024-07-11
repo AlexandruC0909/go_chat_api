@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -88,11 +89,14 @@ func (room *Room) broadcastToClientsInRoom(message []byte) {
 }
 
 func (room *Room) notifyClientJoined(client *Client) {
+	currentTime := time.Now()
+	currentHour, currentMinute, _ := currentTime.Clock()
 	message := &Message{
-		Action:  SendMessageAction,
-		Target:  room,
-		Sender:  client,
-		Message: fmt.Sprintf(welcomeMessage, client.GetName()),
+		Action:    SendMessageAction,
+		Target:    room,
+		Sender:    client,
+		Message:   fmt.Sprintf(welcomeMessage, client.GetName()),
+		Timestamp: fmt.Sprintf("%d:%02d", currentHour, currentMinute),
 	}
 
 	room.broadcastToClientsInRoom(message.encode())
