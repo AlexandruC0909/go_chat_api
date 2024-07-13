@@ -164,7 +164,7 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 
 	roomListMsg := &RoomListMessage{
 		Action:   "room-list",
-		RoomList: wsServer.getAllRooms(),
+		RoomList: wsServer.getAllRooms(client),
 	}
 	client.send <- roomListMsg.encode()
 
@@ -253,7 +253,7 @@ func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 		for client2 := range room.clients {
 			roomListMsg := &RoomListMessage{
 				Action:   "room-list",
-				RoomList: client.wsServer.getAllRooms(),
+				RoomList: client.wsServer.getAllRooms(client),
 			}
 			client2.send <- roomListMsg.encode()
 		}
@@ -283,7 +283,7 @@ func (client *Client) joinRoom(roomName string, sender *Client) {
 		for client2 := range client.wsServer.clients {
 			roomListMsg := &RoomListMessage{
 				Action:   "room-list",
-				RoomList: client.wsServer.getAllRooms(),
+				RoomList: client.wsServer.getAllRooms(client),
 			}
 			client2.send <- roomListMsg.encode()
 		}

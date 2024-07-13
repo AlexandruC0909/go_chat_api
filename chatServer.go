@@ -139,13 +139,15 @@ func (server *WsServer) findClientByID(ID string) *Client {
 	return foundClient
 }
 
-func (server *WsServer) getAllRooms() []*Room {
+func (server *WsServer) getAllRooms(client *Client) []*Room {
 	server.mutex.Lock()
 	defer server.mutex.Unlock()
 
 	rooms := make([]*Room, 0, len(server.rooms))
 	for room := range server.rooms {
-		rooms = append(rooms, room)
+		if !room.Private || (room.Private && room.clients[client]) {
+			rooms = append(rooms, room)
+		}
 	}
 	return rooms
 }

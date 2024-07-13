@@ -101,7 +101,7 @@ func TestGetAllRooms(t *testing.T) {
 	room2 := &Room{}
 	server.rooms[room1] = true
 	server.rooms[room2] = true
-	rooms := server.getAllRooms()
+	rooms := server.getAllRooms(newClient(nil, nil, "test"))
 	if len(rooms) != 2 {
 		t.Errorf("Expected 2 rooms, got %d", len(rooms))
 	}
@@ -118,11 +118,11 @@ func TestGetAllRoomsConcurrent(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		server.getAllRooms()
+		server.getAllRooms(newClient(nil, nil, "test"))
 	}()
 	go func() {
 		defer wg.Done()
-		server.getAllRooms()
+		server.getAllRooms(newClient(nil, nil, "test"))
 	}()
 	wg.Wait()
 }
