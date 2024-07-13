@@ -266,13 +266,14 @@ func (client *Client) joinPrivateRoom(roomName string, sender *Client) Room {
 	if room == nil {
 		room = client.wsServer.createRoom(roomName, true)
 		room.registerClientInRoom(sender)
+
 	}
 	if !sender.isInRoom(room) {
-
 		client.rooms[room] = true
 		room.register <- client
-
 	}
+	client.notifyRoomJoined(room, sender)
+
 	return *room
 }
 
