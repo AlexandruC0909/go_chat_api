@@ -12,10 +12,10 @@ import (
 const welcomeMessage = "%s joined the room"
 
 type Room struct {
-	ID         uuid.UUID   `json:"id"`
-	Name       string      `json:"name"`
-	ClientIDs  []uuid.UUID `json:"client_ids"`
-	Messages   []Message   `json:"messages"`
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	Clients    []Client  `json:"clients"`
+	Messages   []Message `json:"messages"`
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
@@ -35,11 +35,11 @@ func NewRoom(name string, private bool) *Room {
 		Name:       name,
 		clients:    make(map[*Client]bool),
 		Messages:   make([]Message, 0),
-		ClientIDs:  make([]uuid.UUID, 0),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan *Message),
 		Private:    private,
+		Clients:    make([]Client, 0),
 	}
 }
 
@@ -68,7 +68,7 @@ func (room *Room) registerClientInRoom(client *Client) {
 
 	if _, ok := room.clients[client]; !ok {
 		room.clients[client] = true
-		room.ClientIDs = append(room.ClientIDs, client.ID)
+		room.Clients = append(room.Clients, *client)
 	}
 }
 
@@ -76,9 +76,9 @@ func (room *Room) unregisterClientInRoom(client *Client) {
 	if _, ok := room.clients[client]; ok {
 		delete(room.clients, client)
 
-		for i, id := range room.ClientIDs {
-			if id == client.ID {
-				room.ClientIDs = append(room.ClientIDs[:i], room.ClientIDs[i+1:]...)
+		for i, existingClient := range room.Clients {
+			if existingClient.ID == client.ID {
+				room.Clients = append(room.Clients[:i], room.Clients[i+1:]...)
 				break
 			}
 		}

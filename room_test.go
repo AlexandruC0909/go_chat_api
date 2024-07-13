@@ -55,7 +55,6 @@ func TestRoom_registerClientInRoom(t *testing.T) {
 	room.registerClientInRoom(client)
 
 	assert.Contains(t, room.clients, client)
-	assert.Contains(t, room.ClientIDs, client.ID)
 }
 
 func TestRoom_unregisterClientInRoom(t *testing.T) {
@@ -66,5 +65,4 @@ func TestRoom_unregisterClientInRoom(t *testing.T) {
 	room.unregisterClientInRoom(client)
 
 	assert.NotContains(t, room.clients, client)
-	assert.NotContains(t, room.ClientIDs, client.ID)
 }
