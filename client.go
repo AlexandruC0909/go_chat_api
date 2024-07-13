@@ -124,13 +124,20 @@ func (client *Client) writePump() {
 }
 
 func (client *Client) disconnect() {
-	//client.wsServer.unregister <- client
+	hasPrivateRoom := false
+
 	for room := range client.rooms {
 		if !room.Private {
 			room.unregister <- client
+		} else {
+			hasPrivateRoom = true
 		}
 	}
-	//close(client.send)
+	if !hasPrivateRoom {
+		client.wsServer.unregister <- client
+		//close(client.send)
+
+	}
 	client.conn.Close()
 }
 
