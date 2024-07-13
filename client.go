@@ -157,6 +157,10 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 			go client.writePump()
 			go client.readPump()
 			//	return
+		} else {
+			client = newClient(conn, wsServer, name[0])
+			go client.writePump()
+			go client.readPump()
 		}
 	} else {
 		client = newClient(conn, wsServer, name[0])
