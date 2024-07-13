@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -41,6 +42,7 @@ type Client struct {
 	rooms    map[*Room]bool
 	RoomsIds []uuid.UUID `json:"rooms"`
 	isTyping bool
+	mu       sync.Mutex
 }
 
 func newClient(conn *websocket.Conn, wsServer *WsServer, name string) *Client {
@@ -88,9 +90,9 @@ func (client *Client) writePump() {
 	for {
 		select {
 		case message, ok := <-client.send:
+			client.mu.Lock()
 			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// The WsServer closed the channel.
 				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
@@ -101,7 +103,6 @@ func (client *Client) writePump() {
 			}
 			w.Write(message)
 
-			// Attach queued chat messages to the current websocket message.
 			n := len(client.send)
 			for i := 0; i < n; i++ {
 				w.Write(newline)
@@ -111,6 +112,8 @@ func (client *Client) writePump() {
 			if err := w.Close(); err != nil {
 				return
 			}
+			client.mu.Unlock()
+
 		case <-ticker.C:
 			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -121,18 +124,16 @@ func (client *Client) writePump() {
 }
 
 func (client *Client) disconnect() {
-	client.wsServer.unregister <- client
-	for room := range client.rooms {
+	//client.wsServer.unregister <- client
+	/* for room := range client.rooms {
 		room.unregister <- client
-	}
-	close(client.send)
+	} */
+	//close(client.send)
 	client.conn.Close()
 }
 
 func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
-
 	name, ok := r.URL.Query()["name"]
-
 	if !ok || len(name[0]) < 1 {
 		log.Println("Url Param 'name' is missing")
 		return
@@ -144,10 +145,22 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := newClient(conn, wsServer, name[0])
-
-	go client.writePump()
-	go client.readPump()
+	id, ok := r.URL.Query()["id"]
+	var client *Client
+	if ok && len(id[0]) > 0 {
+		client = wsServer.findClientByID(id[0])
+		if client != nil {
+			// Reuse the existing client
+			client.conn = conn
+			go client.writePump()
+			go client.readPump()
+			//	return
+		}
+	} else {
+		client = newClient(conn, wsServer, name[0])
+		go client.writePump()
+		go client.readPump()
+	}
 
 	roomListMsg := &RoomListMessage{
 		Action:   "room-list",
@@ -161,7 +174,9 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	}
 	client.send <- message.encode()
 
-	wsServer.register <- client
+	if _, ok := wsServer.clients[client]; !ok {
+		wsServer.register <- client
+	}
 }
 
 func (client *Client) handleNewMessage(jsonMessage []byte) {
@@ -220,16 +235,45 @@ func (client *Client) handleLeaveRoomMessage(message Message) {
 func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 
 	target := client.wsServer.findClientByID(message.Message)
-
-	if target == nil {
+	var roomTarget *Room
+	if message.Target != nil {
+		roomTarget = client.wsServer.findRoomByID(message.Target.GetId())
+	}
+	if (target == nil && roomTarget == nil) || (target != nil && roomTarget != nil) {
 		return
 	}
+	if roomTarget != nil {
+		client.joinRoom(roomTarget.Name, target)
+	} else {
+		roomName := message.Message + "-----" + client.ID.String()
 
-	// create unique room name combined to the two IDs
-	roomName := message.Message + client.ID.String()
+		client.joinPrivateRoom(roomName, target)
+		room := target.joinPrivateRoom(roomName, client)
 
-	client.joinRoom(roomName, target)
-	target.joinRoom(roomName, client)
+		for client2 := range room.clients {
+			roomListMsg := &RoomListMessage{
+				Action:   "room-list",
+				RoomList: client.wsServer.getAllRooms(),
+			}
+			client2.send <- roomListMsg.encode()
+		}
+	}
+
+}
+
+func (client *Client) joinPrivateRoom(roomName string, sender *Client) Room {
+	room := client.wsServer.findRoomByName(roomName)
+	if room == nil {
+		room = client.wsServer.createRoom(roomName, true)
+		room.registerClientInRoom(sender)
+	}
+	if !sender.isInRoom(room) {
+
+		client.rooms[room] = true
+		room.register <- client
+
+	}
+	return *room
 }
 
 func (client *Client) joinRoom(roomName string, sender *Client) {
@@ -245,17 +289,17 @@ func (client *Client) joinRoom(roomName string, sender *Client) {
 		}
 	}
 
-	if sender == nil && room.Private {
+	if sender == nil && room.Private && !room.clients[client] {
 		return
 	}
 
 	if !client.isInRoom(room) {
 
 		client.rooms[room] = true
-		room.register <- client
 
-		client.notifyRoomJoined(room, sender)
 	}
+	room.register <- client
+	client.notifyRoomJoined(room, sender)
 
 }
 

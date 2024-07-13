@@ -65,8 +65,11 @@ func (room *Room) registerClientInRoom(client *Client) {
 	if !room.Private {
 		room.notifyClientJoined(client)
 	}
-	room.clients[client] = true
-	room.ClientIDs = append(room.ClientIDs, client.ID)
+
+	if _, ok := room.clients[client]; !ok {
+		room.clients[client] = true
+		room.ClientIDs = append(room.ClientIDs, client.ID)
+	}
 }
 
 func (room *Room) unregisterClientInRoom(client *Client) {

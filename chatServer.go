@@ -52,10 +52,12 @@ func (server *WsServer) registerClient(client *Client) {
 }
 
 func (server *WsServer) unregisterClient(client *Client) {
-	if _, ok := server.clients[client]; ok {
-		delete(server.clients, client)
-		server.notifyClientLeft(client)
-	}
+	/*
+		 	if _, ok := server.clients[client]; ok {
+				delete(server.clients, client)
+				server.notifyClientLeft(client)
+			}
+	*/
 }
 
 func (server *WsServer) notifyClientJoined(client *Client) {
