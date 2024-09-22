@@ -10,6 +10,7 @@ import (
 )
 
 const welcomeMessage = "%s joined the room"
+const goodbyeMessage = "%s left the room"
 
 type Room struct {
 	ID         uuid.UUID `json:"id"`
@@ -62,9 +63,7 @@ func (room *Room) RunRoom() {
 }
 
 func (room *Room) registerClientInRoom(client *Client) {
-	if !room.Private {
-		room.notifyClientJoined(client)
-	}
+	room.notifyClientJoined(client)
 
 	if _, ok := room.clients[client]; !ok {
 		room.clients[client] = true
@@ -73,6 +72,7 @@ func (room *Room) registerClientInRoom(client *Client) {
 }
 
 func (room *Room) unregisterClientInRoom(client *Client) {
+	room.notifyClientLeft(client)
 	if _, ok := room.clients[client]; ok {
 		delete(room.clients, client)
 
@@ -104,6 +104,19 @@ func (room *Room) notifyClientJoined(client *Client) {
 
 	room.broadcastToClientsInRoom(message.encode())
 }
+func (room *Room) notifyClientLeft(client *Client) {
+	currentTime := time.Now()
+	currentHour, currentMinute, _ := currentTime.Clock()
+	message := &Message{
+		Action:    SendMessageAction,
+		Target:    room,
+		Sender:    client,
+		Message:   fmt.Sprintf(goodbyeMessage, client.GetName()),
+		Timestamp: fmt.Sprintf("%d:%02d", currentHour, currentMinute),
+	}
+
+	room.broadcastToClientsInRoom(message.encode())
+}
 
 func (room *Room) GetId() string {
 	return room.ID.String()
@@ -119,4 +132,9 @@ func (msg *RoomListMessage) encode() []byte {
 		log.Printf("Error on encoding RoomListMessage: %s", err)
 	}
 	return data
+}
+
+func (room *Room) hasClient(client *Client) bool {
+	_, ok := room.clients[client]
+	return ok
 }
