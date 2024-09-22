@@ -128,7 +128,7 @@ func (client *Client) disconnect() {
 		room.unregister <- client
 	}
 	client.wsServer.unregister <- client
-	close(client.send)
+	//close(client.send)
 	client.conn.Close()
 	/*
 		hasPrivateRoom := false
