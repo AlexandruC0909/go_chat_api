@@ -266,16 +266,28 @@ func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 	}
 
 	if targetRoom == nil {
-
 		roomName := client.ID.String() + "-----" + targetClient.ID.String()
 		targetRoom = client.wsServer.createRoom(roomName, true)
 		targetRoom.registerClientInRoom(client)
 		targetRoom.registerClientInRoom(targetClient)
 	}
 
-	client.joinRoom(targetRoom.Name, targetClient)
-	//targetClient.joinRoom(targetRoom.Name, client)
-	client.notifyRoomJoined(targetRoom, client)
+	//client.joinPrivateRoom(targetRoom.Name, targetClient)
+	//client.joinRoom(targetRoom.Name, client)
+
+	if !client.isInRoom(targetRoom) {
+
+		client.rooms[targetRoom] = true
+
+	}
+	if !targetClient.isInRoom(targetRoom) {
+
+		targetClient.rooms[targetRoom] = true
+
+	}
+
+	targetRoom.register <- client
+	client.notifyRoomJoined(targetRoom, targetClient)
 
 	roomListMsg := &RoomListMessage{
 		Action:   "room-list",
@@ -286,7 +298,7 @@ func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 	}
 }
 
-func (client *Client) joinPrivateRoom(roomName string, sender *Client) Room {
+func (client *Client) joinPrivateRoom(roomName string, sender *Client) {
 	room := client.wsServer.findRoomByName(roomName)
 	if room == nil {
 		room = client.wsServer.createRoom(roomName, true)
@@ -295,11 +307,10 @@ func (client *Client) joinPrivateRoom(roomName string, sender *Client) Room {
 	}
 	if !sender.isInRoom(room) {
 		client.rooms[room] = true
-		room.register <- client
 	}
+	room.register <- client
 	client.notifyRoomJoined(room, sender)
 
-	return *room
 }
 
 func (client *Client) joinRoom(roomName string, sender *Client) {
