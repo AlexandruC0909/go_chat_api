@@ -344,12 +344,16 @@ func (client *Client) joinRoom(roomName string, sender *Client) {
 		return
 	}
 
+	if room.Private {
+		room.registerClientInRoom(sender)
+
+	}
+
 	if !client.isInRoom(room) {
 
 		client.rooms[room] = true
 
 	}
-	room.registerClientInRoom(sender)
 	room.register <- client
 	client.notifyRoomJoined(room, sender)
 
