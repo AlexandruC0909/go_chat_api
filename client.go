@@ -225,7 +225,7 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 		client.handleLeaveRoomMessage(message)
 
 	case JoinRoomPrivateAction:
-		client.handleJoinRoomPrivateMessage(message)
+		client.handleJoinRoomPrivateMessageSimple(message)
 
 	case TypingAction:
 		client.SetTyping(message)
@@ -250,7 +250,21 @@ func (client *Client) handleLeaveRoomMessage(message Message) {
 
 	room.unregister <- client
 }
+func (client *Client) handleJoinRoomPrivateMessageSimple(message Message) {
 
+	target := client.wsServer.findClientByID(message.Message)
+
+	if target == nil {
+		return
+	}
+
+	// create unique room name combined to the two IDs
+	roomName := message.Message + client.ID.String()
+
+	client.joinRoom(roomName, target)
+	target.joinRoom(roomName, client)
+
+}
 func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 	targetClient := client.wsServer.findClientByID(message.Message)
 	if targetClient == nil {
@@ -287,7 +301,7 @@ func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 	}
 
 	targetRoom.register <- client
-	client.notifyRoomJoined(targetRoom, targetClient)
+	client.notifyRoomJoined(targetRoom, nil)
 
 	roomListMsg := &RoomListMessage{
 		Action:   "room-list",
@@ -335,6 +349,7 @@ func (client *Client) joinRoom(roomName string, sender *Client) {
 		client.rooms[room] = true
 
 	}
+	room.registerClientInRoom(sender)
 	room.register <- client
 	client.notifyRoomJoined(room, sender)
 
