@@ -34,5 +34,5 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no -i deploy_key.pem ./main $SERVER_USERNAME@$SERVER_IP:/usr/local/go_chat_api
         env:
-          SERVER_USERNAME: root
-          SERVER_IP: 87.106.122.212
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}

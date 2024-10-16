@@ -29,7 +29,6 @@ type RoomListMessage struct {
 	RoomList []*Room `json:"rooms"`
 }
 
-// NewRoom creates a new Room
 func NewRoom(name string, private bool) *Room {
 	return &Room{
 		ID:         uuid.New(),
@@ -44,7 +43,6 @@ func NewRoom(name string, private bool) *Room {
 	}
 }
 
-// RunRoom runs our room, accepting various requests
 func (room *Room) RunRoom() {
 	for {
 		select {
@@ -94,17 +92,20 @@ func (room *Room) broadcastToClientsInRoom(message []byte) {
 }
 
 func (room *Room) notifyClientJoined(client *Client) {
-	currentTime := time.Now()
-	currentHour, currentMinute, _ := currentTime.Clock()
-	message := &Message{
-		Action:    SendMessageAction,
-		Target:    room,
-		Sender:    client,
-		Message:   fmt.Sprintf(welcomeMessage, client.GetName()),
-		Timestamp: fmt.Sprintf("%d:%02d", currentHour, currentMinute),
+	if !room.Private {
+		currentTime := time.Now()
+		currentHour, currentMinute, _ := currentTime.Clock()
+		message := &Message{
+			Action:    SendMessageAction,
+			Target:    room,
+			Sender:    client,
+			Message:   fmt.Sprintf(welcomeMessage, client.GetName()),
+			Timestamp: fmt.Sprintf("%d:%02d", currentHour, currentMinute),
+		}
+
+		room.broadcastToClientsInRoom(message.encode())
 	}
 
-	room.broadcastToClientsInRoom(message.encode())
 }
 func (room *Room) notifyClientLeft(client *Client) {
 	currentTime := time.Now()

@@ -124,27 +124,24 @@ func (client *Client) writePump() {
 }
 
 func (client *Client) disconnect() {
-	for room := range client.rooms {
+	/* for room := range client.rooms {
 		room.unregister <- client
-	}
-	client.wsServer.unregister <- client
-	//close(client.send)
+	} */
+	/* close(client.send)
 	client.conn.Close()
-	/*
-		hasPrivateRoom := false
-		for room := range client.rooms {
-			if !room.Private {
-				room.unregister <- client
-			} else {
-				hasPrivateRoom = true
-			}
-		}
-		if !hasPrivateRoom {
-			client.wsServer.unregister <- client
-			close(client.send)
-		}
-		client.conn.Close()
 	*/
+	hasPrivateRoom := false
+	for room := range client.rooms {
+		if !room.Private {
+			room.unregister <- client
+		} else {
+			hasPrivateRoom = true
+		}
+	}
+	if !hasPrivateRoom {
+		client.wsServer.unregister <- client
+	}
+	client.conn.Close()
 }
 
 func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
@@ -196,6 +193,7 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	if _, ok := wsServer.clients[client]; !ok {
 		wsServer.register <- client
 	}
+	wsServer.listOnlineClients(client)
 }
 
 func (client *Client) handleNewMessage(jsonMessage []byte) {
