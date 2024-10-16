@@ -14,6 +14,7 @@ const JoinRoomPrivateAction = "join-room-private"
 const RoomJoinedAction = "room-joined"
 const TypingAction = "typing-action"
 const UserLoggedInAction = "user-logged-in"
+const DeleteRoomAction = "delete-room"
 
 type Message struct {
 	Action    string  `json:"action"`

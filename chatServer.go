@@ -119,12 +119,16 @@ func (server *WsServer) findRoomByID(ID string) *Room {
 	return foundRoom
 }
 
-func (server *WsServer) createRoom(name string, private bool) *Room {
-	room := NewRoom(name, private)
+func (server *WsServer) createRoom(name string, private bool, owner *Client) *Room {
+	room := NewRoom(name, private, owner)
 	go room.RunRoom()
 	server.rooms[room] = true
 
 	return room
+}
+
+func (server *WsServer) deleteRoom(room *Room) {
+	delete(server.rooms, room)
 }
 
 func (server *WsServer) findClientByID(ID string) *Client {

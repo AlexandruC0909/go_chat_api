@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewRoom(t *testing.T) {
-	room := NewRoom("TestRoom", false)
+	room := NewRoom("TestRoom", false, nil)
 
 	assert.NotNil(t, room)
 	assert.Equal(t, "TestRoom", room.Name)
@@ -21,13 +21,13 @@ func TestNewRoom(t *testing.T) {
 }
 
 func TestRoom_GetId(t *testing.T) {
-	room := NewRoom("TestRoom", false)
+	room := NewRoom("TestRoom", false, nil)
 
 	assert.NotEmpty(t, room.GetId())
 }
 
 func TestRoom_GetName(t *testing.T) {
-	room := NewRoom("TestRoom", false)
+	room := NewRoom("TestRoom", false, nil)
 
 	assert.Equal(t, "TestRoom", room.GetName())
 }
@@ -35,7 +35,7 @@ func TestRoom_GetName(t *testing.T) {
 func TestRoomListMessage_encode(t *testing.T) {
 	msg := &RoomListMessage{
 		Action:   "testAction",
-		RoomList: []*Room{NewRoom("TestRoom", false)},
+		RoomList: []*Room{NewRoom("TestRoom", false, nil)},
 	}
 
 	data := msg.encode()
@@ -49,7 +49,7 @@ func TestRoomListMessage_encode(t *testing.T) {
 }
 
 func TestRoom_registerClientInRoom(t *testing.T) {
-	room := NewRoom("TestRoom", false)
+	room := NewRoom("TestRoom", false, nil)
 	client := &Client{ID: uuid.New()}
 
 	room.registerClientInRoom(client)
@@ -58,7 +58,7 @@ func TestRoom_registerClientInRoom(t *testing.T) {
 }
 
 func TestRoom_unregisterClientInRoom(t *testing.T) {
-	room := NewRoom("TestRoom", false)
+	room := NewRoom("TestRoom", false, nil)
 	client := &Client{ID: uuid.New()}
 
 	room.registerClientInRoom(client)

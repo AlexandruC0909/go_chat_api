@@ -74,7 +74,7 @@ func TestFindRoomByID(t *testing.T) {
 
 func TestCreateRoom(t *testing.T) {
 	server := NewWebsocketServer()
-	room := server.createRoom("test", false)
+	room := server.createRoom("test", false, newClient(nil, nil, "test"))
 	if room == nil {
 		t.Error("Expected a new Room instance, got nil")
 	}

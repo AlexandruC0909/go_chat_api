@@ -16,6 +16,7 @@ type Room struct {
 	ID         uuid.UUID `json:"id"`
 	Name       string    `json:"name"`
 	Clients    []Client  `json:"clients"`
+	Owner      *Client   `json:"owner"`
 	Messages   []Message `json:"messages"`
 	clients    map[*Client]bool
 	register   chan *Client
@@ -29,11 +30,12 @@ type RoomListMessage struct {
 	RoomList []*Room `json:"rooms"`
 }
 
-func NewRoom(name string, private bool) *Room {
+func NewRoom(name string, private bool, owner *Client) *Room {
 	return &Room{
 		ID:         uuid.New(),
 		Name:       name,
 		clients:    make(map[*Client]bool),
+		Owner:      owner,
 		Messages:   make([]Message, 0),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
