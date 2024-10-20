@@ -14,7 +14,6 @@ type WsServer struct {
 	mutex      sync.Mutex
 }
 
-// NewWebsocketServer creates a new WsServer type
 func NewWebsocketServer() *WsServer {
 	return &WsServer{
 		clients:    make(map[*Client]bool),
@@ -25,7 +24,6 @@ func NewWebsocketServer() *WsServer {
 	}
 }
 
-// Run our websocket server, accepting various requests
 func (server *WsServer) Run() {
 	for {
 		select {
@@ -46,7 +44,6 @@ func (server *WsServer) Run() {
 }
 
 func (server *WsServer) registerClient(client *Client) {
-	server.notifyClientJoined(client)
 	server.listOnlineClients(client)
 	server.clients[client] = true
 }
@@ -58,15 +55,6 @@ func (server *WsServer) unregisterClient(client *Client) {
 		server.notifyClientLeft(client)
 	}
 
-}
-
-func (server *WsServer) notifyClientJoined(client *Client) {
-	message := &Message{
-		Action: UserJoinedAction,
-		Sender: client,
-	}
-
-	server.broadcastToClients(message.encode())
 }
 
 func (server *WsServer) notifyClientLeft(client *Client) {

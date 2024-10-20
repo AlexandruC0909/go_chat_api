@@ -162,11 +162,9 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	if ok && len(id[0]) > 0 {
 		client = wsServer.findClientByID(id[0])
 		if client != nil {
-			// Reuse the existing client
 			client.conn = conn
 			go client.writePump()
 			go client.readPump()
-			//	return
 		} else {
 			client = newClient(conn, wsServer, name[0])
 			go client.writePump()
@@ -254,6 +252,7 @@ func (client *Client) handleJoinRoomMessage(message Message) {
 	roomName := message.Message
 
 	client.joinRoom(roomName, message.Sender, false)
+
 }
 
 func (client *Client) handleLeaveRoomMessage(message Message) {
@@ -262,11 +261,10 @@ func (client *Client) handleLeaveRoomMessage(message Message) {
 		return
 	}
 
-	if _, ok := client.rooms[room]; ok {
-		delete(client.rooms, room)
-	}
+	delete(client.rooms, room)
 
 	room.unregister <- client
+
 }
 func (client *Client) handleJoinRoomPrivateMessageSimple(message Message) {
 
@@ -276,72 +274,10 @@ func (client *Client) handleJoinRoomPrivateMessageSimple(message Message) {
 		return
 	}
 
-	// create unique room name combined to the two IDs
 	roomName := message.Message + client.ID.String()
 
 	client.joinRoom(roomName, target, true)
 	target.joinRoom(roomName, client, true)
-
-}
-func (client *Client) handleJoinRoomPrivateMessage(message Message) {
-	targetClient := client.wsServer.findClientByID(message.Message)
-	if targetClient == nil {
-		return
-	}
-
-	var targetRoom *Room
-	for _, room := range client.wsServer.getAllRooms(client) {
-		if room.Private && room.hasClient(client) && room.hasClient(targetClient) {
-			targetRoom = room
-			break
-		}
-	}
-
-	if targetRoom == nil {
-		roomName := client.ID.String() + "-----" + targetClient.ID.String()
-		targetRoom = client.wsServer.createRoom(roomName, true, client)
-		targetRoom.registerClientInRoom(client)
-		targetRoom.registerClientInRoom(targetClient)
-	}
-
-	//client.joinPrivateRoom(targetRoom.Name, targetClient)
-	//client.joinRoom(targetRoom.Name, client)
-
-	if !client.isInRoom(targetRoom) {
-
-		client.rooms[targetRoom] = true
-
-	}
-	if !targetClient.isInRoom(targetRoom) {
-
-		targetClient.rooms[targetRoom] = true
-
-	}
-
-	targetRoom.register <- client
-	client.notifyRoomJoined(targetRoom, nil)
-
-	roomListMsg := &RoomListMessage{
-		Action:   "room-list",
-		RoomList: client.wsServer.getAllRooms(client),
-	}
-	for otherClient := range targetRoom.clients {
-		otherClient.send <- roomListMsg.encode()
-	}
-}
-
-func (client *Client) joinPrivateRoom(roomName string, sender *Client) {
-	room := client.wsServer.findRoomByName(roomName)
-	if room == nil {
-		room = client.wsServer.createRoom(roomName, true, sender)
-		room.registerClientInRoom(sender)
-
-	}
-	if !sender.isInRoom(room) {
-		client.rooms[room] = true
-	}
-	room.register <- client
-	client.notifyRoomJoined(room, sender)
 
 }
 
@@ -356,16 +292,14 @@ func (client *Client) joinRoom(roomName string, sender *Client, private bool) {
 			}
 			otherClients.send <- roomListMsg.encode()
 		}
+
 	}
 
 	if sender == nil && room.Private && !room.clients[client] {
 		return
 	}
 
-	if room.Private {
-		room.registerClientInRoom(sender)
-
-	}
+	room.registerClientInRoom(sender)
 
 	if !client.isInRoom(room) {
 
@@ -373,6 +307,8 @@ func (client *Client) joinRoom(roomName string, sender *Client, private bool) {
 
 	}
 	room.register <- client
+
+	client.getRoomClients(room)
 	client.notifyRoomJoined(room, sender)
 
 }
@@ -415,4 +351,23 @@ func contains(slice []uuid.UUID, item uuid.UUID) bool {
 		}
 	}
 	return false
+}
+
+func (client *Client) getRoomClients(room *Room) {
+	var clients []*Client
+	for client := range room.clients {
+		clients = append(clients, client)
+	}
+
+	for otherClient := range room.clients {
+
+		if otherClient != client {
+			roomListMsg := &RoomClientsListMessage{
+				Action:          "room-clients-list",
+				RoomClientsList: clients,
+			}
+			otherClient.send <- roomListMsg.encode()
+		}
+
+	}
 }

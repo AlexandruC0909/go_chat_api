@@ -10,12 +10,11 @@ import (
 )
 
 const welcomeMessage = "%s joined the room"
-const goodbyeMessage = "%s left the room"
 
 type Room struct {
 	ID         uuid.UUID `json:"id"`
 	Name       string    `json:"name"`
-	Clients    []Client  `json:"clients"`
+	Clients    []*Client `json:"clients"`
 	Owner      *Client   `json:"owner"`
 	Messages   []Message `json:"messages"`
 	clients    map[*Client]bool
@@ -29,6 +28,10 @@ type RoomListMessage struct {
 	Action   string  `json:"action"`
 	RoomList []*Room `json:"rooms"`
 }
+type RoomClientsListMessage struct {
+	Action          string    `json:"action"`
+	RoomClientsList []*Client `json:"clients"`
+}
 
 func NewRoom(name string, private bool, owner *Client) *Room {
 	return &Room{
@@ -41,7 +44,7 @@ func NewRoom(name string, private bool, owner *Client) *Room {
 		unregister: make(chan *Client),
 		broadcast:  make(chan *Message),
 		Private:    private,
-		Clients:    make([]Client, 0),
+		Clients:    make([]*Client, 0),
 	}
 }
 
@@ -67,7 +70,7 @@ func (room *Room) registerClientInRoom(client *Client) {
 
 	if _, ok := room.clients[client]; !ok {
 		room.clients[client] = true
-		room.Clients = append(room.Clients, *client)
+		room.Clients = append(room.Clients, client)
 	}
 }
 
@@ -84,7 +87,8 @@ func (room *Room) unregisterClientInRoom(client *Client) {
 		}
 	}
 
-	//room.notifyClientLeft(client)
+	client.getRoomClients(room)
+
 }
 
 func (room *Room) broadcastToClientsInRoom(message []byte) {
@@ -109,19 +113,6 @@ func (room *Room) notifyClientJoined(client *Client) {
 	}
 
 }
-func (room *Room) notifyClientLeft(client *Client) {
-	currentTime := time.Now()
-	currentHour, currentMinute, _ := currentTime.Clock()
-	message := &Message{
-		Action:    SendMessageAction,
-		Target:    room,
-		Sender:    client,
-		Message:   fmt.Sprintf(goodbyeMessage, client.GetName()),
-		Timestamp: fmt.Sprintf("%d:%02d", currentHour, currentMinute),
-	}
-
-	room.broadcastToClientsInRoom(message.encode())
-}
 
 func (room *Room) GetId() string {
 	return room.ID.String()
@@ -135,6 +126,13 @@ func (msg *RoomListMessage) encode() []byte {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		log.Printf("Error on encoding RoomListMessage: %s", err)
+	}
+	return data
+}
+func (msg *RoomClientsListMessage) encode() []byte {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error on encoding RoomClientsListMessage: %s", err)
 	}
 	return data
 }
