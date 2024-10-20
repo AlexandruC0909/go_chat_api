@@ -2,14 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
-	"time"
 
 	"github.com/google/uuid"
 )
-
-const welcomeMessage = "%s joined the room"
 
 type Room struct {
 	ID         uuid.UUID `json:"id"`
@@ -66,8 +62,6 @@ func (room *Room) RunRoom() {
 }
 
 func (room *Room) registerClientInRoom(client *Client) {
-	room.notifyClientJoined(client)
-
 	if _, ok := room.clients[client]; !ok {
 		room.clients[client] = true
 		room.Clients = append(room.Clients, client)
@@ -95,23 +89,6 @@ func (room *Room) broadcastToClientsInRoom(message []byte) {
 	for client := range room.clients {
 		client.send <- message
 	}
-}
-
-func (room *Room) notifyClientJoined(client *Client) {
-	if !room.Private {
-		currentTime := time.Now()
-		currentHour, currentMinute, _ := currentTime.Clock()
-		message := &Message{
-			Action:    SendMessageAction,
-			Target:    room,
-			Sender:    client,
-			Message:   fmt.Sprintf(welcomeMessage, client.GetName()),
-			Timestamp: fmt.Sprintf("%d:%02d", currentHour, currentMinute),
-		}
-
-		room.broadcastToClientsInRoom(message.encode())
-	}
-
 }
 
 func (room *Room) GetId() string {

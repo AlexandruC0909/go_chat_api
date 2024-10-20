@@ -354,20 +354,14 @@ func contains(slice []uuid.UUID, item uuid.UUID) bool {
 }
 
 func (client *Client) getRoomClients(room *Room) {
-	var clients []*Client
-	for client := range room.clients {
-		clients = append(clients, client)
-	}
 
 	for otherClient := range room.clients {
 
-		if otherClient != client {
-			roomListMsg := &RoomClientsListMessage{
-				Action:          "room-clients-list",
-				RoomClientsList: clients,
-			}
-			otherClient.send <- roomListMsg.encode()
+		roomListMsg := &RoomClientsListMessage{
+			Action:          "room-clients-list",
+			RoomClientsList: room.Clients,
 		}
+		otherClient.send <- roomListMsg.encode()
 
 	}
 }

@@ -52,18 +52,8 @@ func (server *WsServer) unregisterClient(client *Client) {
 
 	if _, ok := server.clients[client]; ok {
 		delete(server.clients, client)
-		server.notifyClientLeft(client)
 	}
 
-}
-
-func (server *WsServer) notifyClientLeft(client *Client) {
-	message := &Message{
-		Action: UserLeftAction,
-		Sender: client,
-	}
-
-	server.broadcastToClients(message.encode())
 }
 
 func (server *WsServer) listOnlineClients(client *Client) {
