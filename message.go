@@ -23,9 +23,48 @@ type Message struct {
 	Sender    *Client `json:"sender"`
 	Timestamp string  `json:"timestamp"`
 }
+type RoomListMessage struct {
+	Action   string  `json:"action"`
+	RoomList []*Room `json:"rooms"`
+}
+type RoomClientsListMessage struct {
+	Action          string    `json:"action"`
+	RoomClientsList []*Client `json:"clients"`
+}
+type ClientsListMessage struct {
+	Action      string    `json:"action"`
+	ClientsList []*Client `json:"clients"`
+}
 
 func (message *Message) encode() []byte {
 	json, err := json.Marshal(message)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return json
+}
+
+func (roomListMessage *RoomListMessage) encode() []byte {
+	json, err := json.Marshal(roomListMessage)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return json
+}
+
+func (roomListMessage *RoomClientsListMessage) encode() []byte {
+	json, err := json.Marshal(roomListMessage)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return json
+}
+
+func (clientsListMessage *ClientsListMessage) encode() []byte {
+	json, err := json.Marshal(clientsListMessage)
 	if err != nil {
 		log.Println(err)
 	}

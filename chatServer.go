@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"sort"
 	"sync"
 )
 
@@ -44,8 +45,8 @@ func (server *WsServer) Run() {
 }
 
 func (server *WsServer) registerClient(client *Client) {
-	server.listOnlineClients(client)
 	server.clients[client] = true
+	server.listOnlineClients()
 }
 
 func (server *WsServer) unregisterClient(client *Client) {
@@ -53,18 +54,24 @@ func (server *WsServer) unregisterClient(client *Client) {
 	if _, ok := server.clients[client]; ok {
 		delete(server.clients, client)
 	}
+	server.listOnlineClients()
 
 }
 
-func (server *WsServer) listOnlineClients(client *Client) {
-	for existingClient := range server.clients {
-		message := &Message{
-			Action: UserJoinedAction,
-			Sender: existingClient,
-		}
-		client.send <- message.encode()
+func (server *WsServer) listOnlineClients() {
+	var clientList []*Client
+
+	for otherClient := range server.clients {
+		clientList = append(clientList, otherClient)
 	}
 
+	for otherClient := range server.clients {
+		roomListMsg := &ClientsListMessage{
+			Action:      UserJoinedAction,
+			ClientsList: clientList,
+		}
+		otherClient.send <- roomListMsg.encode()
+	}
 }
 
 func (server *WsServer) broadcastToClients(message []byte) {
@@ -126,10 +133,16 @@ func (server *WsServer) getAllRooms(client *Client) []*Room {
 	defer server.mutex.Unlock()
 
 	rooms := make([]*Room, 0, len(server.rooms))
+
 	for room := range server.rooms {
 		if !room.Private || (room.Private && room.clients[client]) {
 			rooms = append(rooms, room)
 		}
 	}
+
+	sort.Slice(rooms, func(i, j int) bool {
+		return rooms[i].Name < rooms[j].Name
+	})
+
 	return rooms
 }

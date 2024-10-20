@@ -216,7 +216,7 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	if _, ok := wsServer.clients[client]; !ok {
 		wsServer.register <- client
 	}
-	wsServer.listOnlineClients(client)
+	wsServer.listOnlineClients()
 }
 
 func (client *Client) handleNewMessage(jsonMessage []byte) {
