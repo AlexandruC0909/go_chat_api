@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -34,26 +35,50 @@ var upgrader = websocket.Upgrader{
 }
 
 type Client struct {
-	conn     *websocket.Conn
-	wsServer *WsServer
-	send     chan []byte
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	rooms    map[*Room]bool
-	RoomsIds []uuid.UUID `json:"rooms"`
-	isTyping bool
-	mu       sync.Mutex
+	conn        *websocket.Conn
+	wsServer    *WsServer
+	send        chan []byte
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	rooms       map[*Room]bool
+	RoomsIds    []uuid.UUID `json:"rooms"`
+	isTyping    bool
+	mu          sync.Mutex
+	AvatarColor string `json:"avatarColor"`
 }
 
 func newClient(conn *websocket.Conn, wsServer *WsServer, name string) *Client {
+	colors := []string{}
+	prefixes := []string{
+		"red",
+		"cyan",
+		"teal",
+		"green",
+		"orange",
+		"deep-orange",
+		"light-blue",
+		"light-green",
+		"lime",
+		"amber",
+		"deep-purple",
+	}
+	suffixes := []string{"9", "10"}
+
+	for _, prefix := range prefixes {
+		for _, suffix := range suffixes {
+			color := fmt.Sprintf("%s-%s", prefix, suffix)
+			colors = append(colors, color)
+		}
+	}
 	return &Client{
-		ID:       uuid.New(),
-		Name:     name,
-		conn:     conn,
-		wsServer: wsServer,
-		send:     make(chan []byte, 256),
-		rooms:    make(map[*Room]bool),
-		RoomsIds: make([]uuid.UUID, 0),
+		ID:          uuid.New(),
+		Name:        name,
+		conn:        conn,
+		wsServer:    wsServer,
+		send:        make(chan []byte, 256),
+		rooms:       make(map[*Room]bool),
+		RoomsIds:    make([]uuid.UUID, 0),
+		AvatarColor: colors[rand.Intn(len(colors))],
 	}
 
 }
