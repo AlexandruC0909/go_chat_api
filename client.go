@@ -272,6 +272,7 @@ func (client *Client) handleAudioMessage(message *Message) {
 	}
 
 	message.AudioData = audioData
+	message.Action = SendMessageAction
 
 	roomID := message.Target.GetId()
 	if room := client.wsServer.findRoomByID(roomID); room != nil {
