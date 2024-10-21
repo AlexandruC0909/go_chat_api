@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -18,7 +19,7 @@ const (
 	writeWait      = 10 * time.Second
 	pongWait       = 60 * time.Second
 	pingPeriod     = (pongWait * 9) / 10
-	maxMessageSize = 10000
+	maxMessageSize = 1024 * 1024 * 4
 )
 
 var (
@@ -27,8 +28,8 @@ var (
 )
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  4096,
-	WriteBufferSize: 4096,
+	ReadBufferSize:  1024 * 1024 * 2,
+	WriteBufferSize: 1024 * 1024 * 2,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
@@ -220,25 +221,18 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 }
 
 func (client *Client) handleNewMessage(jsonMessage []byte) {
-
 	var message Message
 	if err := json.Unmarshal(jsonMessage, &message); err != nil {
-		log.Printf("Error on unmarshal JSON message %s", err)
+		log.Printf("Error on unmarshal JSON message: %s\nReceived message: %s", err, string(jsonMessage))
 		return
 	}
 
-	message.Sender = client
 	currentTime := time.Now()
 	currentHour, currentMinute, _ := currentTime.Clock()
 	message.Timestamp = fmt.Sprintf("%d:%02d", currentHour, currentMinute)
-	switch message.Action {
-	case SendMessageAction:
-		roomID := message.Target.GetId()
-		if room := client.wsServer.findRoomByID(roomID); room != nil {
-			room.Messages = append(room.Messages, message)
-			room.broadcast <- &message
-		}
+	message.Sender = client
 
+	switch message.Action {
 	case JoinRoomAction:
 		client.handleJoinRoomMessage(message)
 
@@ -254,10 +248,37 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 	case DeleteRoomAction:
 		client.handleDeleteRoomAcion(message)
 
-	}
+	case SendMessageAction:
+		client.handleTextMessage(&message)
 
+	case SendAudioMessageAction:
+		client.handleAudioMessage(&message)
+	}
 }
 
+func (client *Client) handleTextMessage(message *Message) {
+	roomID := message.Target.GetId()
+	if room := client.wsServer.findRoomByID(roomID); room != nil {
+		room.Messages = append(room.Messages, *message)
+		room.broadcast <- message
+	}
+}
+
+func (client *Client) handleAudioMessage(message *Message) {
+	audioData, err := base64.StdEncoding.DecodeString(message.Message)
+	if err != nil {
+		log.Printf("Error decoding base64 audio message: %s", err)
+		return
+	}
+
+	message.AudioData = audioData
+
+	roomID := message.Target.GetId()
+	if room := client.wsServer.findRoomByID(roomID); room != nil {
+		room.Messages = append(room.Messages, *message)
+		room.broadcast <- message
+	}
+}
 func (client *Client) handleDeleteRoomAcion(message Message) {
 	room := client.wsServer.findRoomByID(message.Target.GetId())
 	if room == nil {

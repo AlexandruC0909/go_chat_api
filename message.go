@@ -6,6 +6,7 @@ import (
 )
 
 const SendMessageAction = "send-message"
+const SendAudioMessageAction = "send-audio-message"
 const JoinRoomAction = "join-room"
 const LeaveRoomAction = "leave-room"
 const UserJoinedAction = "user-join"
@@ -22,6 +23,7 @@ type Message struct {
 	Target    *Room   `json:"target"`
 	Sender    *Client `json:"sender"`
 	Timestamp string  `json:"timestamp"`
+	AudioData []byte  `json:"audioData"`
 }
 type RoomListMessage struct {
 	Action   string  `json:"action"`
